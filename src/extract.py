@@ -38,6 +38,11 @@ def main():
                 print('Location does not exist')
                 addLocation(conn, cur, float(jsonObj['latitude']), float(jsonObj['longitude']), float(jsonObj['elevation']), jsonObj['timezone'])
 
+        locationID = getLocationID(cur, float(jsonObj['latitude']), float(jsonObj['longitude']))
+
+        addWeather(conn, cur, jsonObj['daily'], locationID)
+        
+
         # close the communication with the PostgreSQL database
         cur.close()
     except (Exception, psycopg2.DatabaseError) as error:
@@ -54,6 +59,31 @@ def checkLocationExists(dbCursor, latitude, longitude) -> bool:
 def addLocation(dbConnection, dbCursor, latitude, longitude, elevation, timezone):
     dbCursor.execute('INSERT INTO locations (latitude, longitude, elevation, timezone) VALUES (%s, %s, %s, %s);', (latitude, longitude,elevation,timezone))
     dbConnection.commit()
+
+def getLocationID(dbCursor, latitude, longitude) -> int:
+    dbCursor.execute('SELECT LocationID FROM Locations WHERE Latitude = %s AND Longitude = %s;', (latitude, longitude))
+    return dbCursor.fetchone()[0]
+
+def addWeather(dbConnection, dbCursor, jsonObj, locationID):
+    for i in range(0,len(jsonObj['time'])):
+        dbCursor.execute('INSERT INTO weather VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);', 
+                         (locationID, 
+                        jsonObj['time'][i],
+                        jsonObj['weather_code'][i],
+                        jsonObj['temperature_2m_min'][i],
+                        jsonObj['temperature_2m_max'][i],
+                        jsonObj['apparent_temperature_min'][i],
+                        jsonObj['apparent_temperature_max'][i],
+                        jsonObj['sunrise'][i],
+                        jsonObj['sunset'][i],
+                        jsonObj['daylight_duration'][i],
+                        jsonObj['sunshine_duration'][i],
+                        jsonObj['precipitation_sum'][i],
+                        jsonObj['rain_sum'][i],
+                        jsonObj['snowfall_sum'][i],
+                        jsonObj['precipitation_hours'][i]))
+    dbConnection.commit()
+
 
 if __name__ == "__main__":
     main()
