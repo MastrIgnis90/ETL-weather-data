@@ -1,12 +1,30 @@
 import psycopg2
 import os
 import json
+import requests
+import pathlib
 from configImporter import parseConfig
+
+# https://archive-api.open-meteo.com/v1/archive?
+# latitude=51.0501&
+# longitude=-114.0853&
+# start_date=2026-01-01&
+# end_date=2026-01-31&
+# daily=weather_code,temperature_2m_max,temperature_2m_min,apparent_temperature_max,apparent_temperature_min,sunset,daylight_duration,sunrise,sunshine_duration,precipitation_sum,rain_sum,snowfall_sum,precipitation_hours&
+# timezone=auto
+
+def extract():
+    params = parseConfig('..\\config\\apiRequest.ini', 'apiRequest')
+    apirequest = "https://archive-api.open-meteo.com/v1/archive?latitude={0}&longitude={1}&start_date={2}&end_date={3}&daily=weather_code,temperature_2m_max,temperature_2m_min,apparent_temperature_max,apparent_temperature_min,sunset,daylight_duration,sunrise,sunshine_duration,precipitation_sum,rain_sum,snowfall_sum,precipitation_hours&timezone=auto".format(params['latitude'], params['longitude'], params['start_date'], params['end_date'])
+    path = pathlib.Path.cwd().joinpath('res', '{0}_{1}_{2}_{3}.json'.format(params['latitude'], params['longitude'], params['start_date'], params['end_date']))
+    print(path)
+    with open(path, 'w') as file:
+        json.dump(requests.get(apirequest).json(), file, indent=4)
+
 
 def main():
     jsonObj = None
     path = os.path.join(os.path.dirname(__file__), '..\\json\\archive.json')
-    print(path)
     with open(path, 'r') as file:
         content = file.read()
         jsonObj = json.loads(content)
@@ -86,4 +104,4 @@ def addWeather(dbConnection, dbCursor, jsonObj, locationID):
 
 
 if __name__ == "__main__":
-    main()
+    extract()
